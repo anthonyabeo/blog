@@ -1,0 +1,68 @@
+baseurl = "https://anthonyabeo.github.io/"
+title = "Anabila"
+theme = "hugo-coder"
+languagecode = "en"
+defaultcontentlanguage = "en"
+
+paginate = 20
+canonifyurls = true
+
+pygmentsstyle = "b2"
+pygmentscodefences = true
+pygmentscodefencesguesssyntax = true
+
+disqusShortname = "anthonyabeo-github-io"
+
+[params]
+    author = "Anabila"
+    info = "Professional Software Developer - Hobbyist Artist"
+    description = "Den of Ideas"
+    keywords = "blog,developer,personal"
+    avatarurl = "images/avatar.jpg"
+
+    favicon_32 = "/static/favicon-32x32.png"
+    favicon_16 = "/static/favicon-16x16.png"
+
+    # footercontent = "Enter a text here."
+
+    hidecredits = false
+    hidecopyright = false
+
+    rtl = false
+
+    math = true
+    custom_css = ["css/custom.css"]
+
+# Social links
+[[params.social]]
+    name = "Github"
+    icon = "fab fa-github fa-2x"
+    weight = 1
+    url = "https://github.com/anthonyabeo/"
+[[params.social]]
+    name = "LinkedIn"
+    icon = "fab fa-linkedin fa-2x"
+    weight = 2
+    url = "https://linkedin.com/in/anthonyabeo/"
+[[params.social]]
+    name = "Twitter"
+    icon = "fab fa-twitter fa-2x"
+    weight = 3
+    url = "https://twitter.com/anthonyabeo7/"
+
+# Menu links
+[[menu.main]]
+    name = "Blog"
+    weight = 1
+    url  = "/posts/"
+[[menu.main]]
+    name = "About"
+    weight = 2
+    url = "/about/"
+[[menu.main]]
+    name = "Projects"
+    weight = 3
+    url = "/projects/"
+
+[taxonomies]
+tag ="tags"
