@@ -33,7 +33,7 @@ The function below performs such an operation
 
 ```rust
 fn find_ascii_group(c: char) {
-    let c = (c as u8) & 0b01100000;
+    let c = (c as u8) & 0b0110_0000;
     match c {
         0 => println!("Control Group"),
         32 => println!("Digits and Punctuation"),
@@ -70,7 +70,7 @@ fn to_uppercase(c: char) -> char {
         CharGroup::DigitsAndPunctuation => '0',
         CharGroup::UppercaseAndSpecialChars => c,
         CharGroup::LowercaseAndSpecialChars => {
-            let c = (c as u8) & 0b11011111;
+            let c = (c as u8) & 0b1101_1111;
             c as char
         },
         _ => '0'

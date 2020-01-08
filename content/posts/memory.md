@@ -2,6 +2,8 @@
 title: "The Circuitry of Computer Memory"
 date: 2018-05-13T16:39:54Z
 tags: ['memory', 'digital circuits', 'logic']
+description : ""
+slug : "circuitry of computer memory" 
 ---
 
 ### BACKGROUND
