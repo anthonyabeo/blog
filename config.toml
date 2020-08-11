@@ -1,5 +1,6 @@
 theme = "themescactus"
 title = "Anabila"
+baseurl = "https://anthonyabeo.github.io/"
 
 [params]
 description = "Aspiring computer engineering researcher with an interest in Hardware Acceleration and Computer Architecture."
