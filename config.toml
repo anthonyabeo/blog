@@ -30,19 +30,19 @@ weight = 5
 
 
 [[params.social]]
-  name = "github"
-  link = "https://github.com/anthonyabeo"
+name = "github"
+link = "https://github.com/anthonyabeo"
 
 [[params.social]]
-  name = "email"
-  link = "anthonyabeo@gmail.com"
+name = "email"
+link = "anthonyabeo@gmail.com"
 
 [[params.social]]
-  name = "linkedin"
-  link = "https://www.linkedin.com/in/anthony-abeo-7256b6186/"
+name = "linkedin"
+link = "https://www.linkedin.com/in/anthony-abeo-7256b6186/"
 
 [[params.social]]
-  name = "twitter"
-  link = "https://www.twitter.com/anthonyabeo7"
+name = "twitter"
+link = "https://www.twitter.com/anthonyabeo7"
 
 copyright = "Anthony Abeo"
