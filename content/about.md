@@ -1,4 +1,4 @@
----
+<!-- ---
 title: "About Me"
 slug: "about"  
 ---
@@ -15,4 +15,4 @@ I am an aspiring computer engineering researcher with an interest in hardware ac
 - CAD Tools for Integrated Circuits
 - Virtual Machines
 
-I am hoping to pursue a research-based master's degree in computer engineering, with a focus on integrated circuits and systems.
+I am hoping to pursue a research-based master's degree in computer engineering, with a focus on integrated circuits and systems. -->
