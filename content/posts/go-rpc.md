@@ -2,17 +2,13 @@
 title: "Remote Procedure Calls in Go"
 date: 2021-09-27T13:44:57Z
 tags : ['rpc', 'go', 'vagrant']
-draft : true
 ---
 
 ## Introduction
-These days most networked applications are designed a logical, self-contained, unifunctional services. Each service communicates with other services to perform some actions such as completing
-user requests. For example, a notification service may contact a user management service to verify the authenticity of the user. Such inter-service communication requires communication protocal such as REST and GraphQL. In this post, I want to briefly introduce another method called Remote
-Procedure Calls (RPC).
+These days most networked applications are designed as logical, self-contained, unifunctional services. Each service communicates with other services to complete some user request. For example, a notification service may contact a user management service to acquire a user's credentials before sending a notification. Such inter-service communication requires a communication protocol such as REST and GraphQL. In this post, I want to briefly introduce another method called Remote Procedure Calls (RPC).
 
 ### Remote Procedure Calls (RPC)
-RPC is a communication protocol that allows one service to call a function/method/procedure in another service over a network. Essentially, the client service encodes the function definition and potential arguments into some format and sends it over to the server service. The server decoded the message and executes the specified method (using the arguments) and returns a response to the client. There several frameworks that
-simplify the definition and usage of RPCs. These include gRPC and Apache Thrift. In this post, I want to discuss a simple RPC setup using Go's RPC package.
+RPC is a communication protocol that allows one service to call a function/method/procedure in another service over a network. Essentially, the client service encodes the function definition and potential arguments into some format and sends it over to the server service. The server decodes the message and executes the specified method (using the arguments) and returns an appropriate response to the client. There are several frameworks that simplify the definition and usage of RPCs. These include gRPC and Apache Thrift. In this post, I want to discuss a simple RPC setup using Go's RPC package.
 
 ### Go's RPC package
 Per the documentation, the Go RPC packages "provides access to the exported methods of an object across a network or other I/O connection". The methods that are made available must satisfy the following criteria:
@@ -29,7 +25,7 @@ Basically, a method whose signature matches the following template:
 func (t *T) MethodName(argType T1, replyType *T2) error
 ```
 
-To demonstrate how this will work, I'll simulate a simple environment with two servers, each running a simple process, communicating using RPC. The server will be created and networked using Vagrant (with Virtualbox).
+To demonstrate how this will work, I'll simulate a simple environment with two servers, each running a simple process, communicating using RPC. The servers will be created and networked using Vagrant (with Virtualbox).
 
 ### Vagrant Servers
 The Vagrantfile looks like so:
@@ -60,10 +56,10 @@ Vagrant.configure("2") do |config|
 end
 ```
 
-This configuration creates two servers named `athena` with IP address `192.168.33.90` and `kratos` with IP address `192.168.33.91`. Each server exposes some ports where the services will be listening and is provisioned by installing Go. 
+This configuration creates two servers named `athena` with IP address `192.168.33.90` and `kratos` with IP address `192.168.33.91`. Each server exposes some ports where the services will be listening on and is provisioned by installing Go. 
 
 ### Athena (Server)
-The program define a simple in-memory key-value store (Lines 36-39), with `Get (Lines 41-54)`, `Put (Lines 57-65)` methods (to the exported). Then, there is a `main method (Lines 68-90)` that creates the key-value services, registers it with the RPC, starts a server and listens for requests.
+The program defines a simple in-memory key-value store (Lines 36-39), with `Get (Lines 41-54)`, `Put (Lines 57-65)` methods (to be exported. Then, there is a `main function (Lines 68-90)` that creates the key-value service, registers it with the RPC, starts a server, and listens for requests.
 ```go
   1 package main
   2
@@ -158,7 +154,7 @@ The program define a simple in-memory key-value store (Lines 36-39), with `Get (
 ```
 
 ### Kratos (Client)
-The client defines two eponymous methods, `get (Lines 44-58)` and `put (Lines 60-72)`, in addition to a `connect (Lines 34-41)` that establishes a connection to the server and returns a client handle.
+The client defines two eponymous methods, `get (Lines 44-58)` and `put (Lines 60-72)`, in addition to `connect (Lines 34-41)` that establishes a connection to the server and returns a client handle.
 In addition, there are mirror definitions for the argument and return value types of the methods defined in the server. This ensures that the correct arguments are sent and the correct response received.
 ```go
   1 package main
@@ -256,4 +252,4 @@ In addition, there are mirror definitions for the argument and return value type
 The `main function (Lines 75-91)` simply calls the `put` method to store some data in the key-value store on the server and calls `get` to retrieve it.
 
 ## Conclusion
-This is as simple as RPC gets. For a more production-ready system, more robust frameworks such as gRPC and Apache Thrift should be preferred. gRPC provides a flexible, full-featured interface-definition language called protocol buffers that makes defining services a breeze. It also offers security features and improved performance by supporting bi-directional streaming among others.
+This is as simple as RPC gets. For a more production-ready system, more robust frameworks such as gRPC and Apache Thrift should be preferred. gRPC provides a flexible, full-featured interface-definition language called protocol buffers that makes defining services a breeze. It also offers security features and improved performance by supporting bi-directional streaming, among others.
