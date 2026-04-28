@@ -1,5 +1,5 @@
 baseURL: "https://anthonyabeo.github.io/"
-title: Anabila
+title: Trunk Whorl
 paginate: 5
 theme: PaperMod
 
@@ -18,16 +18,16 @@ params:
   env: production # to enable google analytics, opengraph, twitter-cards and schema.
   title: ExampleSite
   description: "Abstract is Simple. Simple is Beautiful."
-  keywords: [Blog, Portfolio, PaperMod]
+  keywords: [ Blog, Portfolio, PaperMod ]
   author: Me
   # author: ["Me", "You"] # multiple authors
-  images: ["<link or path of image for opengraph, twitter-cards>"]
+  images: []
   DateFormat: "January 2, 2006"
   defaultTheme: auto # dark, light
   disableThemeToggle: false
 
   ShowReadingTime: true
-  ShowShareButtons: true
+  ShowShareButtons: false
   ShowPostNavLinks: true
   ShowBreadCrumbs: true
   ShowCodeCopyButtons: false
@@ -42,14 +42,14 @@ params:
   assets:
     # disableHLJS: true # to disable highlight.js
     # disableFingerprinting: true
-    favicon: "<link / abs url>"
-    favicon16x16: "<link / abs url>"
-    favicon32x32: "<link / abs url>"
-    apple_touch_icon: "<link / abs url>"
-    safari_pinned_tab: "<link / abs url>"
+    favicon: ""
+    favicon16x16: ""
+    favicon32x32: ""
+    apple_touch_icon: ""
+    safari_pinned_tab: ""
 
   label:
-    text: "Anabila"
+    text: "Trunk Whorl"
     # icon: /apple-touch-icon.png
     iconHeight: 35
 
@@ -70,24 +70,17 @@ params:
 
   # home-info mode
   homeInfoParams:
-    Title: "Hi there \U0001F44B"
-    Content: I am naturally drawn toward computing systems. Anything from finite
-      automata to distributed systems will light a flame that burns until
-      I have developed a solid understanding of how such a system works.
-      Virtual machines in particular have been an interest of mine due their
-      varied applicability and utility in numerous domains. I am also interested
-      in building large scale distributed application utilising modern software
-      engineering tools and practices.
-
-      If you’re a kindred spirit, do reach out.
+    Title: "Hi there 👋"
+    Content: Software engineer specializing in compilers, programming languages, and
+      developer tools. Interested in domain-specific compilers, including
+      hardware-generating compilers and other systems that translate high-level
+      abstractions into efficient, specialized implementations. I actively build
+      and experiment with language tooling, contribute to open-source projects
+      on GitHub, and write about compiler design and systems performance.
 
   socialIcons:
-    - name: twitter
-      url: "https://twitter.com/anthonyabeo7"
     - name: github
       url: "https://github.com/anthonyabeo"
-    - name: linkedin
-      url: "https://www.linkedin.com/in/anthony-abeo/"
 
   analytics:
     google:
@@ -116,14 +109,31 @@ params:
     distance: 1000
     threshold: 0.4
     minMatchCharLength: 0
-    keys: ["title", "permalink", "summary", "content"]
+    keys: [ "title", "permalink", "summary", "content" ]
 
 menu:
   main:
-    - identifier: Projects
-      name: projects
-      url: /projects/
+    - identifier: Home
+      name: Home
+      url: /
       weight: 10
+    - identifier: Blog
+      name: Blog
+      url: /posts/
+      weight: 20
+    - identifier: Projects
+      name: Projects
+      url: /projects/
+      weight: 30
+    - identifier: Resume
+      name: Resume
+      url: /resume/
+      weight: 40
+    - identifier: Contact
+      name: Contact
+      url: /contact/
+      weight: 50
+
 # Read: https://github.com/adityatelange/hugo-PaperMod/wiki/FAQs#using-hugos-syntax-highlighter-chroma
 # pygmentsUseClasses: true
 # markup:
