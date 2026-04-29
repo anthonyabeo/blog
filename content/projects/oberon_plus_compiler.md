@@ -4,14 +4,14 @@ date: 2026-04-27T12:00:00Z
 ---
 
 ## ABSTRACT
-[Obx](https://github.com/anthonyabeo/obx)  is a compact, pedagogical compiler for an extended [Oberon dialect](https://oberon-lang.github.io/). The implementation following a traditional linear pipeline and includes and small standard library for performing operating systems level tasks. The source is parsed into a small, explicitly-typed AST, validated by a straightforward semantic pass, lowered to a simple three-address intermediate representation, and emitted by a minimal backend. The compiler provide a few interfaces for interaction including a Command Line Interface and a [web-based playground]( https://obxplayground.trunkwhorl.com/) that allows users to check and (soon) run example programs, inspect outputs (diagnostics, control-flow graph, assembly, etc). 
+[Obx](https://github.com/anthonyabeo/obx)  is a compiler for an extended [Oberon dialect](https://oberon-lang.github.io/). The implementation following a traditional, linear pipeline and includes a small standard library for performing OS level tasks. The source is parsed into an explicitly-typed AST, validated by a straightforward semantic pass, lowered to a simple three-address intermediate representation, and emitted by a minimal backend. The compiler provides a Command Line Interface and a [web-based playground]( https://obxplayground.trunkwhorl.com/) that allows users to check and (soon) run example programs and inspect outputs (diagnostics, control-flow graph, assembly, etc). 
 
 ## DESIGN
 
-The toolchain follows a linear pipeline: `lexer → parser → semantic analysis → IR lowering → backend codegen`. The AST favors explicit node types and annotations to simplify reasoning about correctness; the IR preserves block structure with explicit temporaries to make basic optimizations and debugging tractable. Typical modules are `lexer`, `parser`, `sema`, `ir`, and `codegen`.
+The toolchain follows a linear pipeline: `lexer → parser → semantic analysis → IR lowering → optimization → codegen`. The AST favors explicit node types and annotations to simplify reasoning about correctness; the IR preserves block structure with explicit temporaries to make basic optimizations and debugging tractable. Typical modules are `lexer`, `parser`, `sema`, `ir`, `opt`, and `codegen`.
 
 ### Lexer
-The obx lexer (scanner) is a small, pragmatic, Unicode‑aware state‑machine scanner. It converts source text into a stream of `token.Token` values consumed by the parser. The scanner  emits precise token positions, supports rich numeric and string literal formats (including hex strings), keeps comments and directive tokens discoverable for pre‑processing, and reports lexical errors as ILLEGAL tokens with helpful messages.
+The Obx lexer (scanner) is a Unicode‑aware state‑machine scanner. It converts source text into a stream of `token.Token` values consumed by the parser. The scanner  emits precise token positions, supports rich numeric and string literal formats (including hex strings), keeps comments and directive tokens discoverable for pre‑processing, and reports lexical errors as `ILLEGAL` tokens with helpful messages.
 
 #### Files of interest
 * Scanner implementation: `src/syntax/scan/scanner.go`
@@ -19,13 +19,13 @@ The obx lexer (scanner) is a small, pragmatic, Unicode‑aware state‑machine s
 * Token definitions: `src/syntax/token/token.go`
 * Parser integration: `src/syntax/parser/ (uses the scanner)`
 
-#### Overview of design goals
+#### Design Goals
 * Produce a compact, well‑typed token stream with source positions (Pos, End) for diagnostics.
 * Good diagnostics for malformed literals (unterminated strings, malformed numbers, invalid hex digits).
 * Efficient: scanner runs in a goroutine and emits tokens over a buffered channel.
 
 #### Scanner architecture
-state functions The lexer uses function states (a la Rob Pike's lexer pattern). state.go defines `type StateFn func(*Scanner) StateFn` and many small scan* functions implementing tokenization for identifiers, numbers, strings and so on. The main loop in scanner.go triggers the state machine:
+The lexer uses function states (a la Rob Pike's lexer pattern). `state.go` defines `type StateFn func(*Scanner) StateFn` and many small `scan*` functions implementing tokenization for identifiers, numbers, strings and so on. The main loop in `scanner.go` triggers the state machine:
 ```go
 // scanner.go (simplified)
 func (s *Scanner) run() {
@@ -36,7 +36,7 @@ func (s *Scanner) run() {
 }
 ```
 Tokens are emitted via a channel `s.items chan token.Token` and read by callers through `NextToken()`.
-The scanner records `start`, `pos`, `width` (last rune), and `line/column` counters. `emit` / `emitWithValue` creates token.Token{Kind, Lexeme, Pos, End} and resets `start`.
+The scanner records `start`, `pos`, `width` (last rune), and `line/column` counters. `emit` / `emitWithValue` creates `token.Token{Kind, Lexeme, Pos, End}` and resets `start`.
 
 #### Example Usage
 ```go
@@ -60,7 +60,7 @@ for {
 ```
 
 ### Parser
-The Obx parser is pragmatic and purpose‑built: it turns a token stream from the lexer into an unambiguous AST while keeping diagnostics clear, making it easier for subsequent compiler phases (semantic analysis, IR lowering) to traverse and operation on it. Because some language constructs must be interpreted differently depending on prior declarations, the parser consults a small, incremental symbol table during parse to disambiguate constructs (e.g., type-guard vs. function call) and employs a panic error recovery style that uses synchronization tokens to continue parsing.
+The Obx parser turns a token stream from the lexer into an unambiguous AST while keeping diagnostics clear, making it easier for subsequent compiler phases (semantic analysis, IR lowering) to traverse and operate on it. Because some language constructs must be interpreted differently depending on prior declarations, the parser consults a small, incremental symbol table during parse to disambiguate constructs (e.g., type-guard vs. function call) and employs a panic error recovery style that uses synchronization tokens to continue parsing.
 
 #### Files of interest
 * Scanner: `src/syntax/scan/*`
@@ -74,7 +74,7 @@ The Obx parser is pragmatic and purpose‑built: it turns a token stream from th
 * Support incremental or interactive workflows in the future (editor plugins).
 
 #### Parser architecture
-The parser is a classic recursive-descent parser with `parse*` function for each grammar production. It parses Oberon+ programs into a series of compilation units (module or definition) while incrementally building a scope-based symbol environment (`ctx.Env`) for declarations.
+The parser is a classic recursive-descent parser with `parse*` functions for each grammar production. It parses Oberon+ programs into a series of compilation units (`module` or `definition`) while incrementally building a scope-based symbol environment (`ctx.Env`) for declarations.
 ```go
 func NewParser(ctx *compiler.Context, fileName string, content []byte) *Parser {
 	p := &Parser{
@@ -100,7 +100,7 @@ func (p *Parser) Parse() (unit ast.CompilationUnit) {
 	return
 }
 ```
-This symbol environment makes the parsing context-sensitive. This is necessary to assist parsing given that the grammar is not context free. A prime example can be seen in the grammar for `Type Guard` vs `Function Calls` and deciding where `IDENTIFIER . IDENTIFER` is a module's reference an entity such as `IO.WriteLn` or a record field selector such as `r.f`.
+This symbol environment makes the parsing context-sensitive. This is necessary to assist parsing given that the grammar is not context free. A prime example can be seen in the grammar for `Type Guard` vs `Function Calls` and deciding where `IDENTIFIER . IDENTIFER` is a module's referencing an entity such as `IO.WriteLn` or a record field selector such as `r.f`.
 
 ```ebnf
 A type guard v(T) asserts that the dynamic type of v is T (or an extension of T), i.e. program execution is aborted, if the dynamic type of v is not T (or an extension of T)
@@ -180,17 +180,17 @@ Tests: `src/sema/*_test.go and src/sema/types/*_test.go`.
     * These are intentionally per‑walk, ephemeral, and not shared across compilation units.
 
 * Type representation
-    * The type system is implemented in src/sema/types/. Types are first‑class Go values (e.g., *types.RecordType, *types.ArrayType, *types.PointerType, *types.ProcedureType, plus basic types like Int32Type).
-    * Helpers exist (e.g., types.Underlying, types.IsInteger, types.IsRecord, types.IsExtensionOf, types.IsPointerToRecord) to implement language semantics succinctly.
-    * When the resolver binds a named type symbol, the ast.NamedType node gets NamedType.Symbol set so the typechecker can fetch the actual types.Type.
+    * The type system is implemented in src/sema/types/. Types are first‑class Go values (e.g., `*types.RecordType, *types.ArrayType, *types.PointerType, *types.ProcedureType`, plus basic types like `Int32Type`).
+    * Helpers exist (e.g., `types.Underlying, types.IsInteger, types.IsRecord, types.IsExtensionOf, types.IsPointerToRecord`) to implement language semantics succinctly.
+    * When the resolver binds a named type symbol, the `ast.NamedType` node gets `NamedType.Symbol` set so the typechecker can fetch the actual types.Type.
 
 #### Example flows (name resolution → type check)
 1. Name resolution sets ident.Symbol for every ast.Identifier.
 2. TypeChecker, when visiting ast.Identifier, calls def.Symbol.AstType().Accept(t) to convert ast.Type into a types.Type (or simply read an already associated semantic type).
-3. When encountering a field selection a.b, the resolver ensures a has a denoted type; TypeChecker then inspects types.Underlying(a.Type()) and verifies b exists on the record type; it assigns s.Symbol.SetType(field.Type) so downstream passes know the precise type.
+3. When encountering a field selection `a.b`, the resolver ensures a has a denoted type; TypeChecker then inspects types.Underlying(a.Type()) and verifies b exists on the record type; it assigns s.Symbol.SetType(field.Type) so downstream passes know the precise type.
 
 ### IR Lowering
-IR lowering translates the language AST/HIR into a low‑level intermediate representation suitable for optimizer passes and backend code generation. In obx this is a two‑step process: desugaring produces a compact HIR (high‑level IR) that normalizes syntactic sugar and control flow, then the HIR is lowered into the OBX IR (`obxir`) — a simple, explicit instruction‑oriented IR with basic blocks, values and a small set of ops. The IR is designed to make optimisations (DCE, constant folding, register allocation) and multi‑target code generation straightforward.
+IR lowering translates the language AST/HIR into a medium‑level intermediate representation suitable for optimizer passes and backend code generation. In Obx, this is a two‑step process: desugaring produces a compact HIR (high‑level IR) that normalizes syntactic sugar and control flow, then the HIR is lowered into the OBX IR (`obxir`) — a simple, explicit, instruction‑oriented IR with basic blocks, values and a small set of ops. The IR is designed to make optimisations (DCE, constant folding, register allocation) and multi‑target code generation straightforward.
 
 #### Files of interest
 - HIR / desugar: `src/ir/desugar/*` (notably `hirgen.go`, `hir.go`)
@@ -200,7 +200,7 @@ IR lowering translates the language AST/HIR into a low‑level intermediate repr
 - Codegen backends: `src/codegen/*` (emit assembly from OBX IR)
 
 #### Why two stages (desugar → obxir)
-- HIR (desugared AST) keeps source‑level constructs but in a canonical form: multi‑assignment, syntactic sugar (e.g., `WITH`, `CASE` sugar), high‑level expression forms are normalized. This simplifies lowering rules and makes it easier to test language transformations.
+- HIR (desugared AST) keeps source‑level constructs but in a canonical form: syntactic sugar (e.g., `WITH`, `CASE` sugar), high‑level expression forms are normalized. This simplifies lowering rules and makes it easier to test language transformations.
 - OBX IR is small and explicit (instructions, blocks, values). The optimizer and codegen operate on a clean, predictable instruction set.
 - Separation keeps lowering code manageable and isolates language desugaring from target‑specific or register concerns.
 
@@ -273,7 +273,7 @@ main:
   RET
 ```
 ### Optimization
-The optimizer in obx is a small, pragmatic pass framework that runs a set of local and global transformations over the OBX IR. It focuses on correctness and developer ergonomics: readable debug output, a configurable pass pipeline, and basic but effective transforms (constant folding, control‑flow tidy/merge, dead‑code elimination, SSA helpers). The code lives under src/opt/ and operates on the IR defined in src/ir/obxir/.
+The optimizer in Obx is a small, pass framework that runs a set of local and global transformations over the OBX IR. It focuses on correctness and developer ergonomics: readable debug output, a configurable pass pipeline, and basic but effective transforms (constant folding, control‑flow tidy/merge, dead‑code elimination, SSA helpers). The code lives under src/opt/ and operates on the IR defined in src/ir/obxir/.
 
 #### Key files
 - Pass framework and manager: `src/opt/pass.go`
@@ -292,32 +292,32 @@ The optimizer in obx is a small, pragmatic pass framework that runs a set of loc
 
 #### Pass framework
 - Pass interface (in pass.go):
-    - Name() string
-    - Run(fn *obxir.Function, ctx *PassContext) *ChangeSet
-- PassContext carries ephemeral analyses and a ChangeSet. Use it to cache analysis results or surface change logs between passes.
-- ChangeSet signals if a pass changed the function and holds human-readable notes (used when verbose).
+    - `Name() string`
+    - `Run(fn *obxir.Function, ctx *PassContext) *ChangeSet`
+- `PassContext` carries ephemeral analyses and a ChangeSet. Use it to cache analysis results or surface change logs between passes.
+- `ChangeSet` signals if a pass changed the function and holds human-readable notes (used when verbose).
 - PassManager:
     - ConfigurePasses(map[string]any) to pick passes by optlevel or explicit enable/disable strings.
-    - RunOnce(fn) or RunFixedPoint(fn, maxIters) to iterate passes until a fixed point.
+    - `RunOnce(fn)` or `RunFixedPoint(fn, maxIters)` to iterate passes until a fixed point.
 
 #### Control flow & CFG utilities (control.go)
-- BuildCFG(fn):
+- `BuildCFG(fn)`:
     - Maps block labels to blocks, inspects terminators (CondBr/Jmp/Return/Halt) and populates Succs and Preds maps for each block.
     - Normalizes Return to jump to a dedicated exit block.
-    - Calls CleanCFG to run iterative CFG cleanups.
+    - Calls `CleanCFG` to run iterative CFG cleanups.
 
-- CleanCFG runs a suite of block/edge transforms until stable:
-    - EliminateDeadBlocks — BFS from entry; removes unreachable blocks.
-    - RemoveEmptyBlocks — splices out trivial single-jump blocks.
-    - FoldRedundantBranches — replace conditional branches whose true/false targets are identical with an unconditional jump.
-    - HoistBranch — move branch tests up a level where appropriate (simplifies nesting).
-    - CombineBlocks — merge a block that ends with an unconditional jump into its single successor if safe.
+- `CleanCFG` runs a suite of block/edge transforms until stable:
+    - `EliminateDeadBlocks` — BFS from entry; removes unreachable blocks.
+    - `RemoveEmptyBlocks` — splices out trivial single-jump blocks.
+    - `FoldRedundantBranches` — replace conditional branches whose true/false targets are identical with an unconditional jump.
+    - `HoistBranch` — move branch tests up a level where appropriate (simplifies nesting).
+    - `CombineBlocks` — merge a block that ends with an unconditional jump into its single successor if safe.
 
 - Dominator & DF computations:
-    - ComputeDominators, ImmediateDominators, DominatorTree, ComputeDF
+    - `ComputeDominators`, `ImmediateDominators`, `DominatorTree`, `ComputeDF`
 
 - Def/use collection:
-    - ComputeDefUse computes defSites and useSites used by SSA pass.
+    - `ComputeDefUse` computes defSites and useSites used by SSA pass.
 
 #### Dead-code elimination and block-level cleanups (dce.go)
 - Block-level DCE functions (see above) remove unreachable blocks and compact CFG.
@@ -325,17 +325,17 @@ The optimizer in obx is a small, pragmatic pass framework that runs a set of loc
 - Higher-level DCE (eliminate unused instructions / values) is typically done after or as part of other passes; you can extend with value-level liveness analysis.
 
 #### Constant folding pass (fold.go)
-- ConstantFold iterates blocks/instructions in DFS order and asks instructions that implement obxir.Foldable to fold themselves.
-- If instr.(obxir.Foldable).CanFold() returns true, the pass replaces the instruction with a MoveInst assigning the folded constant value (via Fold()).
+- `ConstantFold` iterates blocks/instructions in DFS order and asks instructions that implement obxir.Foldable to fold themselves.
+- If `instr.(obxir.Foldable).CanFold()` returns true, the pass replaces the instruction with a MoveInst assigning the folded constant value (via Fold()).
 - Fold logs are appended to the ChangeSet so verbose runs show what was replaced.
 
 #### SSA helpers (ssa.go)
-- SSAConstruct(fn) orchestrates building SSA form for easier downstream transforms:
-    - Build CFG: BuildCFG(fn)
-    - Compute dominators and def/use info: ComputeDom(fn)
-    - Place φ-nodes: PlacePhiNodes(fn) — uses DF and def-sites from ComputeDefUse.
-    - Rename values: RenamePhiNodes(fn) — creates versioned names and rewrites defs/uses.
-- PlacePhiNodes and RenamePhiNodes follow the classic Cytron algorithm (worklist of def-sites, DF-based insertion, rename via DFS over dominator tree).
+- `SSAConstruct(fn)` orchestrates building SSA form for easier downstream transforms:
+    - Build CFG: `BuildCFG(fn)`
+    - Compute dominators and def/use info: `ComputeDom(fn)`
+    - Place φ-nodes: `PlacePhiNodes(fn)` — uses DF and def-sites from ComputeDefUse.
+    - Rename values: `RenamePhiNodes(fn)` — creates versioned names and rewrites defs/uses.
+- `PlacePhiNodes` and `RenamePhiNodes` follow the classic Cytron algorithm (worklist of def-sites, DF-based insertion, rename via DFS over dominator tree).
 - SSA data placed into fn.SSAInfo enables SSA-aware passes.
 
 
@@ -358,36 +358,35 @@ The code generation (codegen) phase maps the compiler’s target-independent rep
 
 #### Pipeline stages (practical walkthrough)
 1. Input IR and lowering
-    - Start with the compiler’s mid-level IR (HIR/OBX IR). Lower complex operations to a small set of lower-level operations that match available target instructions (e.g., decompose compound ops, guarantee legal operand types).
+    - Start with the compiler’s mid-level IR (ObxIR). Lower complex operations to a small set of lower-level operations that match available target instructions (e.g., decompose compound ops, guarantee legal operand types).
     - Lowering makes instruction selection tractable and separates target-independent transforms from target-specific patterns.
 
-2. Instruction selection (src/codegen/isel)
-    - The selector maps lowered IR nodes to target instruction patterns. This repo organizes pattern matching into isel rules and a small pattern matcher (bottom-up rewrite / pattern-matching approach).
+2. Instruction selection (`src/codegen/isel`)
+    - The selector maps lowered IR nodes to target instruction patterns. This repo organizes pattern matching into isel rules and a small pattern matcher.
     - Patterns capture when an IR node and its children can be implemented by a single instruction or a short sequence; selection prefers cost-minimal matches.
 
-3. Legalization and target-specific lowering (src/codegen/target, framer.go)
+3. Legalization and target-specific lowering (`src/codegen/target, framer.go`)
     - After selection, nodes that are not directly representable by a target are legalized (split into representable parts or emulated via helper sequences).
     - framer.go crafts the function frame: stack slot layout, spill slots, callee-save handling, and stack alignment according to the target ABI.
 
-4. Liveness analysis and live range building (src/codegen/ralloc/liveness.go etc.)
+4. Liveness analysis and live range building (`src/codegen/ralloc/liveness.go` etc.)
     - Compute live intervals and interference for temporaries and virtual registers; this is required for any register allocator.
     - Use flow analysis to understand where values are needed and where they can be reused or spilled.
 
-5. Register allocation (src/codegen/ralloc)
+5. Register allocation (`src/codegen/ralloc`)
     - The repo contains allocator implementations and helpers for linear-scan and graph-coloring style approaches. Linear-scan offers simpler, faster allocation (often used for JITs and fast builds); graph coloring gives better allocation quality at the cost of complexity.
     - The allocator produces mappings from virtual registers to physical registers or stack slots and inserts spill/reload instructions where necessary.
 
 6. Rewriting and instruction scheduling (micro-scheduling)
     - After allocation, some instruction sequences may need re-emission to ensure register constraints are satisfied. Small scheduling passes reorder instructions locally to reduce stalls and improve pipeline behavior (architecture-specific).
     
-7. Assembly emission (src/codegen/asm and target backends)
+7. Assembly emission (`src/codegen/asm` and target backends)
     - Final encoding and textual or binary emission of instructions happen in the asm and target/ backend code (e.g., arm64/ implementation).
     - The emitter is responsible for proper instruction encoding, constant pools, relocations and linking metadata.
 
 ## KEY CHALLENGES AND TRADE-OFFS
 #### Non‑context‑free grammar: the practical problem and the parser workaround 
-The language’s grammar is not strictly context free: some syntactic choices depend on the current name bindings (is this identifier a type, a value, or an import?). A pure CFG parser would produce ambiguous or incorrect ASTs in those cases.
-Workaround we used During parsing we build and consult a lightweight symbol table to disambiguate constructs where necessary (essentially a parse-time isType lookup). This keeps the AST cleaner and reduces downstream ambiguity: QualifiedIdent nodes are created with the intended shape, and where possible the parser attaches the name binding early.
+The language’s grammar is not strictly context free: some syntactic choices depend on the current name bindings (is this identifier a type, a value, or an import?). A pure CFG parser would produce ambiguous or incorrect ASTs in those cases. Workaround used during parsing involves building and consulting a lightweight symbol table to disambiguate constructs where necessary. This keeps the AST cleaner and reduces downstream ambiguity: QualifiedIdent nodes are created with the intended shape, and where possible the parser attaches the name binding early.
 
 ##### Tradeoff
 - Benefit: fewer ambiguous AST shapes; downstream passes (typecheck, lowering, codegen) have a simpler input and fewer ad-hoc reclassifications to perform.
