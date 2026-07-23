@@ -106,8 +106,8 @@ My current outline for the series looks like this:
 
 1. **Trade-offs in object-oriented compiler structures**  
    Where rich node hierarchies help, and where they start to get in the way.
-2. **Interning names, literals, and strings**  
-   Why compact identifiers are often better than passing raw strings across phases.
+2. **Data-oriented design principles, data layout, and interning**  
+   The core ideas behind data-oriented design, how layout shapes compiler behavior, and why interned identifiers are often a better fit than raw strings.
 3. **Representing syntax with flat trees**  
    How a post-order tree or similar layout changes traversal and ownership.
 4. **Building an IR around pools and stable IDs**  

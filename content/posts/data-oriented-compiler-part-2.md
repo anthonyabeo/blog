@@ -273,4 +273,4 @@ Once that second reality starts to dominate, rich node hierarchies often become 
 
 That is the trade-off I wanted to make explicit in this post.
 
-In the next one, I will zoom in on a more specific design decision: why interned names, literals, and strings often give a compiler a much cleaner foundation than passing raw text through every phase.
+In the next one, I will step back and lay out the broader data-oriented design principles that will guide the rest of the series: how to think about data layout, access patterns, stable identifiers, and representation boundaries, and why choices like interning naturally follow from that perspective.
